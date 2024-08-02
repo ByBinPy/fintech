@@ -1,0 +1,12 @@
+version: '3.8'
+services:
+  fintechdb:
+    image: postgres:14.1-alpine
+    restart: on-failure
+    environment:
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=fintech2024
+    ports:
+      - '5437:5432'
+    volumes:
+      - /init.sql:/docker-entrypoint-initdb.d
