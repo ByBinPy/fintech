@@ -5,8 +5,6 @@ import fintech.services.impl.exceptions.TranslateException;
 import fintech.services.impl.exceptions.TranslateRequestException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -30,8 +28,36 @@ public class TranslateService {
     private String YANDEX_TRANSLATE_URL;
     @Value("${yandex.folder.id}}")
     private String YANDEX_FOLDER_ID;
+    private final RestTemplate restTemplate;
+
+    @Autowired
+    public TranslateService(RestTemplate restTemplate) {
+        this.restTemplate = restTemplate;
+    }
+
+    public String translate(String text, String requestLanguage, String responseLanguage) throws TranslateException {
+        String[] words = text.split(" ");
+        int count_words = words.length;
+        StringBuilder translatedWords = new StringBuilder();
+        Future<?>[] tasks = new Future<?>[count_words];
+        for (int i = 0; i < count_words; i++) {
+            int finalI = i;
+            tasks[i] = pool.submit(() -> translateWord(words[finalI], requestLanguage, responseLanguage));
+        }
+
+        for (int i = 0; i < count_words; i++) {
+            try {
+                translatedWords.append((String) tasks[i].get());
+                translatedWords.append(" ");
+            } catch (ExecutionException e) {
+                throw new TranslateException(String.format(e.getMessage()));
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        return translatedWords.toString();
+    }
     private String translateWord(String word, String requestLanguage, String responseLanguage) throws TranslateRequestException {
-        RestTemplate restTemplate = new RestTemplate();
 
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", "Api-Key " + YANDEX_API_KEY);
@@ -55,27 +81,5 @@ public class TranslateService {
         } catch (RestClientException e) {
             throw new TranslateRequestException(e.getMessage());
         }
-    }
-    public String translate(String text, String requestLanguage, String responseLanguage) throws TranslateException {
-        String[] words = text.split(" "); // delimiter - all characters except digits,letters and underscore
-        int count_words = words.length;
-        StringBuilder translatedWords = new StringBuilder();
-        Future<?>[] tasks = new Future<?>[count_words];
-        for (int i = 0; i < count_words; i++) {
-            int finalI = i;
-            tasks[i] = pool.submit(() -> translateWord(words[finalI], requestLanguage, responseLanguage));
-        }
-
-        for (int i = 0; i < count_words; i++) {
-            try {
-                translatedWords.append((String) tasks[i].get());
-                translatedWords.append(" ");
-            } catch (ExecutionException e) {
-                throw new TranslateException(String.format(e.getMessage()));
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-        }
-        return translatedWords.toString();
     }
 }
