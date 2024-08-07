@@ -1,6 +1,7 @@
 package fintech.services.impl;
 
 import fintech.services.impl.dto.TranslateResponse;
+import fintech.services.impl.exceptions.InvalidLanguageException;
 import fintech.services.impl.exceptions.TranslateException;
 import fintech.services.impl.exceptions.TranslateRequestException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,16 +27,22 @@ public class TranslateService {
     private String YANDEX_API_KEY;
     @Value("${yandex.translate.url}")
     private String YANDEX_TRANSLATE_URL;
-    @Value("${yandex.folder.id}}")
+    @Value("${yandex.folder.id}")
     private String YANDEX_FOLDER_ID;
+
     private final RestTemplate restTemplate;
+    private final Set<String> languageCodes;
 
     @Autowired
-    public TranslateService(RestTemplate restTemplate) {
+    public TranslateService(RestTemplate restTemplate, Set<String> languageCodes) {
         this.restTemplate = restTemplate;
+        this.languageCodes = languageCodes;
     }
 
-    public String translate(String text, String requestLanguage, String responseLanguage) throws TranslateException {
+    public String translate(String text, String requestLanguage, String responseLanguage) throws TranslateException, InvalidLanguageException {
+        if (!languageCodes.contains(requestLanguage) || !languageCodes.contains(responseLanguage)) {
+            throw new InvalidLanguageException();
+        }
         String[] words = text.split(" ");
         int count_words = words.length;
         StringBuilder translatedWords = new StringBuilder();

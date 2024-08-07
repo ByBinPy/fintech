@@ -24,7 +24,7 @@ public class ClientRepository implements Repository {
     }
 
     @Override
-    public Entity getById(int id) throws GetRepositoryException {
+    public Client getById(int id) throws GetRepositoryException {
         String query = "SELECT id, ip FROM users WHERE id = ?";
         try (PreparedStatement stmt = connection.prepareStatement(query)) {
             stmt.setInt(1, id);
@@ -39,7 +39,7 @@ public class ClientRepository implements Repository {
     }
 
     @Override
-    public Entity save(Entity entity) throws SaveRepositoryException {
+    public Client save(Entity entity) throws SaveRepositoryException {
         if (entity instanceof Client client) {
             String query = "INSERT INTO users (id, ip) VALUES (?, ?) ON CONFLICT (id) DO UPDATE SET ip = EXCLUDED.ip RETURNING *";
             try (PreparedStatement stmt = connection.prepareStatement(query)) {
@@ -71,5 +71,31 @@ public class ClientRepository implements Repository {
         if (entity instanceof Client client) {
             deleteById(client.id());
         }
+    }
+
+    public Client getByIp(String ip) throws GetRepositoryException {
+        String query = "SELECT id, ip FROM users WHERE ip = ?";
+        try (PreparedStatement stmt = connection.prepareStatement(query)) {
+            stmt.setString(1, ip);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                return new Client(rs.getInt("id"), rs.getString("ip"));
+            }
+        } catch (SQLException e) {
+            throw new GetRepositoryException();
+        }
+        return null;
+    }
+    public int getCountClients() throws GetRepositoryException {
+        String query = "SELECT COUNT(*) AS CNT FROM USERS";
+        try (PreparedStatement stmt = connection.prepareStatement(query)) {
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                return rs.getInt("CNT");
+            }
+        } catch (SQLException e) {
+            throw new GetRepositoryException();
+        }
+        return 0;
     }
 }

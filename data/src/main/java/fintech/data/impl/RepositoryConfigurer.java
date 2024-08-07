@@ -11,6 +11,7 @@ import java.sql.SQLException;
 public class RepositoryConfigurer {
     @Bean
     public Connection repositoryConnection() throws SQLException {
-        return DriverManager.getConnection("jdbc:postgresql:fintech&user=admin&password=fintech2024");
+        return DriverManager.getConnection("jdbc:postgresql://localhost:5437/fintech","admin","fintech2024");
+
     }
 }
